@@ -6,7 +6,7 @@ var mongoClient = require("mongodb").MongoClient,
 
 app.use(express.static('assets'));
 
-app.post('/postuser', function (req, res) {
+/*app.post('/postuser', function (req, res) {
     console.log('username: ' + req.query.username);
     console.log('password: ' + req.query.password);
     res.send("Finished");
@@ -14,10 +14,10 @@ app.post('/postuser', function (req, res) {
 
 app.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');
-});
+});*/
 
 app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/testpost.html');
+    res.sendFile(__dirname + '/index.html');
 });
 
 app.use(function (req, res) {

@@ -2,11 +2,11 @@ var app = angular.module('myApp', ['ngRoute']);
 
 app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
-        .when('/login', {templateUrl: '/login.html', controller: 'myController'})
-        .when('/home', {templateUrl: '/home.html', controller: 'editController'})
-        .when('/profile', {templateUrl: '/home.html', controller: 'editController'})
-        .when('/message', {templateUrl: '/message.html', controller: 'messageController'})
-        .when('/message/:id', {templateUrl:'message_details.html', controller: 'messageDetailsController'})
+        .when('/login', {templateUrl: 'views/login.html', controller: 'myController'})
+        .when('/home', {templateUrl: 'views/home.html', controller: 'editController'})
+        .when('/profile', {templateUrl: 'views/home.html', controller: 'editController'})
+        .when('/message', {templateUrl: 'views/message.html', controller: 'messageController'})
+        .when('/message/:id', {templateUrl:'views/message_details.html', controller: 'messageDetailsController'})
         .otherwise({redirectTo: '/login'});
 }]);
 
