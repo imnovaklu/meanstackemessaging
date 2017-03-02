@@ -6,32 +6,67 @@ var mongoClient = require("mongodb").MongoClient,
 
 app.use(express.static('assets'));
 
+var ajaxResult = {
+    "OK": {
+        "status":200,
+        "text":"Register successfully!"
+    },
+    "DUPLICATED": {
+        "status":400,
+        "text":"Please use another username"
+    },
+    "NOTFOUND": {
+        "status":404,
+        "text":"The username and password are not matched"
+    },
+    "FOUND":{
+        "status":200,
+        "text":"Login in"
+    }
+};
+
 app.post('/postuser', function (req, res) {
-    /*console.log('username: ' + req.query.username);
-    console.log('password: ' + req.query.password);*/
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
             var records = db.collection('users').find({"username":req.query.username});
-            var count = 0;
-            records.each(function () {
-                count++;
-            });
-            console.log(count);
-            if(count === 0){
-                var users = [{
-                    "username": req.query.username,
-                    "password": req.query.password,
-                    "name": req.query.name,
-                    "location": req.query.location,
-                    "email": req.query.email,
-                    "number": req.query.number
-                }];
-                insertDataArray(db,'users', users);
+            records.count(function (err, count) {
+                if(count === 0){
+                    var users = {
+                        "username": req.query.username,
+                        "password": req.query.password,
+                        "name": req.query.name,
+                        "location": req.query.location,
+                        "email": req.query.email,
+                        "number": req.query.number
+                    };
+                    insertData(db,'users', users);
+                    res.send(ajaxResult.OK);
+                }else {
+                    console.log("Not allowed to insert duplicated items");
+                    res.send(ajaxResult.DUPLICATED);
+                }
                 db.close();
-            }
+            });
+        }
+    });
+});
 
+app.get('/getuser', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+        }else {
+            var records = db.collection('users').find({"username":req.query.username});
+            records.count(function (err, count) {
+                if(count === 0){
+                    res.send(ajaxResult.NOTFOUND);
+                }else {
+                    res.send(ajaxResult.FOUND);
+                }
+                db.close();
+            });
         }
     });
 });
@@ -52,7 +87,7 @@ app.listen(8080, function () {
     console.log('Server running @ localhost:8080');
 });
 
-function insertDataArray(db, collection, obj) {
+function insertData(db, collection, obj) {
     var devices = db.collection(collection);
     devices.insert(obj, function(err, res){
         if(err) {

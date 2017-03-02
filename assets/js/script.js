@@ -40,27 +40,37 @@ app.controller('myController',  ['$scope', '$window', function ($scope, $window)
     };
 }]);
 
-app.controller('registerController', ['$scope', function ($scope) {
-    $scope.submit_register = function () {
-        var $form = $("#add_contact");
-        console.log('http://127.0.0.1:8080/postuser?' +$form.serialize().toString());
-        $.ajax({
-            type: 'post',
-            url: 'http://127.0.0.1:8080/postuser?' + $form.serialize().toString(),
-            contentType: 'application/json',
-            success: function(data) {
-                console.log("success");
-                console.log(data);
-            },
-            error:function () {
-                console.log();
-            }
-        });
-    };
-    $scope.clear_all = function () {
+app.controller('registerController', ['$scope', '$window', function ($scope, $window) {
+    function clearAll() {
         for(var key in $scope.newuser){
             $scope.newuser[key] = "";
         }
+    }
+    $scope.submit_register = function () {
+        var $form = $("#add_contact");
+        $.ajax({
+            type:'post',
+            url: 'http://127.0.0.1:8080/postuser?' + $form.serialize().toString(),
+            dataType: 'text'
+        }).done(function (data) {
+            data = JSON.parse(data);
+            console.log(data.status);
+            if (data.status == 200) {
+                box(data.text);
+            } else if (data.status == 400) {
+                box(data.text, true)
+            }
+            return $window.location.href = "#/login"
+        })
+            .fail(function () {
+                console.log("fail");
+            })
+            .always(function () {
+                clearAll();
+            });
+    };
+    $scope.clear_all = function () {
+        clearAll();
     }
 }]);
 
