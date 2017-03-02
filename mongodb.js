@@ -7,16 +7,17 @@ var mongoClient = require("mongodb").MongoClient,
 app.use(express.static('assets'));
 
 app.post('/postuser', function (req, res) {
-    console.log('body: ' + JSON.stringify(req.body));
-    res.send(req.body);
+    console.log('username: ' + req.query.username);
+    console.log('password: ' + req.query.password);
+    res.send("Finished");
 });
 
 app.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');
 });
 
-app.get('/home', function (req, res) {
-    res.send('Welcome to my home page!!!!');
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/testpost.html');
 });
 
 app.use(function (req, res) {
