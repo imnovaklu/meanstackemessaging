@@ -1,0 +1,32 @@
+<div ng-controller="editController">
+    <nav>
+        <ul>
+            <li><a href="#/profile"><i class="fa fa-file"></i>Profile</a></li>
+            <li><a href="#/message"><i class="fa fa-envelope"></i>Message</a></li>
+            <li ng-click="logout()"><a><i class="fa fa-sign-out"></i>Logout</a></li>
+        </ul>
+    </nav>
+    <div id="container" class="edit_info">
+        <form id="add_contact">
+            <label>Name</label>
+            <input type="text" title="name" placeholder="name" ng-model="edit_name" value="edit_name"/>
+            <br/>
+            <label>Email</label>
+            <input type="text" title="email" placeholder="email" ng-model="edit_email" value="edit_email"/>
+            <br/>
+            <label>Username</label>
+            <input type="text" title="username" placeholder="username" ng-model="edit_username" value="edit_username" disabled="disabled" />
+            <br/>
+            <label>Password</label>
+            <input type="text" title="password" placeholder="password" ng-model="edit_password" value="edit_password"/>
+            <br/>
+            <label>Location</label>
+            <input type="text" title="location" placeholder="location" ng-model="edit_location" value="edit_location"/>
+            <br/>
+            <label>Number</label>
+            <input type="text" title="contact number" placeholder="contact number" ng-model="edit_number" value="edit_number"/>
+            <button class="btn-green submit_btn horizontal-lined" ng-click="update()">Update</button>
+            <button class="btn-green submit_btn horizontal-lined" ng-click="reset()">Reset</button>
+        </form>
+    </div>
+</div>

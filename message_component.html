@@ -1,0 +1,8 @@
+<div ng-class="{'container':true, 'container-green':important, 'container-white': !important}">
+    <div style="text-align: left"><span>Sender: "{{sender}}"</span>  <span>     Date: {{date}}  {{important}}</span>
+        <i class="fa fa-trash" ng-click="delete_message($event)"></i>
+        <i class="fa fa-eye" ng-click="view_message($event)"></i>
+        <i class="fa fa-exclamation" ng-click="makeImp()"></i>
+    </div>
+    {{subject}}
+</div>

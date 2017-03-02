@@ -1,0 +1,11 @@
+<div id="container" ng-controller="myController">
+    <form id="add_contact">
+        <input id="txt_usr" type="text" title="username" placeholder="username" ng-model="login_username"/>
+        <span ng-show="username_show">You must enter a valid username</span>
+        <br />
+        <input id="psw" type="password" title="password" placeholder="password" ng-model="login_password"/>
+        <span ng-show="password_show">You must enter a valid password</span>
+        <br />
+        <button class="btn-green submit_btn" ng-click="login()">Submit</button>
+    </form>
+</div>
