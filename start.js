@@ -13,16 +13,25 @@ app.post('/postuser', function (req, res) {
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
-            var users = [{
-                "username": req.query.username,
-                "password": req.query.password,
-                "name": req.query.name,
-                "location": req.query.location,
-                "email": req.query.email,
-                "number": req.query.number
-            }];
-            insertDataArray(db,'users', users);
-            db.close();
+            var records = db.collection('users').find({"username":req.query.username});
+            var count = 0;
+            records.each(function () {
+                count++;
+            });
+            console.log(count);
+            if(count === 0){
+                var users = [{
+                    "username": req.query.username,
+                    "password": req.query.password,
+                    "name": req.query.name,
+                    "location": req.query.location,
+                    "email": req.query.email,
+                    "number": req.query.number
+                }];
+                insertDataArray(db,'users', users);
+                db.close();
+            }
+
         }
     });
 });
@@ -43,16 +52,14 @@ app.listen(8080, function () {
     console.log('Server running @ localhost:8080');
 });
 
-function insertDataArray(db, collection, objArr) {
+function insertDataArray(db, collection, obj) {
     var devices = db.collection(collection);
-    objArr.forEach(function (data) {
-        devices.insert(data,function(err, res){
-            if(err) {
-                console.log("error while inserting");
-            }else{
-                console.log("finish inserting");
-            }
-        });
+    devices.insert(obj, function(err, res){
+        if(err) {
+            console.log("error while inserting");
+        }else{
+            console.log("finish inserting");
+        }
     });
 }
 
