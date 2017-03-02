@@ -1,17 +1,16 @@
-<div ng-controller="messageDetailsController">
-    <nav>
-        <ul>
-            <li><a href="#/profile"><i class="fa fa-file"></i>Profile</a></li>
-            <li><a href="#/message"><i class="fa fa-envelope"></i>Message</a></li>
-            <li ng-click="logout()"><a><i class="fa fa-sign-out"></i>Logout</a></li>
-        </ul>
-    </nav>
-    <div class="container container-black" style="width: 800px">
-        <form class="message_form">
-            <p>FROM <span style="color: yellow">{{logUser.sender}}</span> TO <span style="color: yellow">{{logUser.receiver}}</span> AT <span style="color: deeppink">{{logUser.date}}</span></p>
-            <p>SUBJECT:  {{logUser.subject}}</p>
-            <p>{{logUser.content}}</p>
-            <button class="btn-blue submit_btn" ng-click="back()">Back</button>
-        </form>
-    </div>
+<nav>
+    <ul>
+        <li><a href="#/profile"><i class="fa fa-file"></i>Profile</a></li>
+        <li><a href="#/message"><i class="fa fa-envelope"></i>Message</a></li>
+        <li ng-click="logout()"><a><i class="fa fa-sign-out"></i>Logout</a></li>
+    </ul>
+</nav>
+<div class="container container-black" style="width: 800px">
+    <form class="message_form">
+        <p>FROM <span style="color: yellow">{{logUser.sender}}</span> TO <span style="color: yellow">{{logUser.receiver}}</span>
+            AT <span style="color: deeppink">{{logUser.date}}</span></p>
+        <p>SUBJECT: {{logUser.subject}}</p>
+        <p>{{logUser.content}}</p>
+        <button class="btn-blue submit_btn" ng-click="back()">Back</button>
+    </form>
 </div>

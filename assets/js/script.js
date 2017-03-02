@@ -3,6 +3,7 @@ var app = angular.module('myApp', ['ngRoute']);
 app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
         .when('/login', {templateUrl: 'views/login.html', controller: 'myController'})
+        .when('/register', {templateUrl: 'views/register.html', controller: 'registerController'}) //页面上没有加ng-controller
         .when('/home', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/profile', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/message', {templateUrl: 'views/message.html', controller: 'messageController'})
@@ -34,6 +35,33 @@ app.controller('myController',  ['$scope', '$window', function ($scope, $window)
             box("The username and password are not matched", true);
         }
     };
+    $scope.register = function () {
+        $window.location.href = "#/register";
+    };
+}]);
+
+app.controller('registerController', ['$scope', function ($scope) {
+    $scope.submit_register = function () {
+        var $form = $("#add_contact");
+        console.log('http://127.0.0.1:8080/postuser?' +$form.serialize().toString());
+        $.ajax({
+            type: 'post',
+            url: 'http://127.0.0.1:8080/postuser?' + $form.serialize().toString(),
+            contentType: 'application/json',
+            success: function(data) {
+                console.log("success");
+                console.log(data);
+            },
+            error:function () {
+                console.log();
+            }
+        });
+    };
+    $scope.clear_all = function () {
+        for(var key in $scope.newuser){
+            $scope.newuser[key] = "";
+        }
+    }
 }]);
 
 app.controller('editController', ['$scope', '$window', function ($scope, $window) {
@@ -145,7 +173,7 @@ app.controller('messageDetailsController', ['$scope', '$rootScope', '$window', f
 
 app.directive('messageDirective', ['$compile', function ($compile) {
     return {
-        templateUrl:'message_component.html',
+        templateUrl:'views/message_component.html',
         controller:'messageController',
         restrict:'E',
         link:function (scope, elem, attrs) {

@@ -6,15 +6,30 @@ var mongoClient = require("mongodb").MongoClient,
 
 app.use(express.static('assets'));
 
-/*app.post('/postuser', function (req, res) {
-    console.log('username: ' + req.query.username);
-    console.log('password: ' + req.query.password);
-    res.send("Finished");
+app.post('/postuser', function (req, res) {
+    /*console.log('username: ' + req.query.username);
+    console.log('password: ' + req.query.password);*/
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+        }else {
+            var users = [{
+                "username": req.query.username,
+                "password": req.query.password,
+                "name": req.query.name,
+                "location": req.query.location,
+                "email": req.query.email,
+                "number": req.query.number
+            }];
+            insertDataArray(db,'users', users);
+            db.close();
+        }
+    });
 });
 
 app.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');
-});*/
+});
 
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
@@ -37,7 +52,6 @@ function insertDataArray(db, collection, objArr) {
             }else{
                 console.log("finish inserting");
             }
-            //db.close();
         });
     });
 }
