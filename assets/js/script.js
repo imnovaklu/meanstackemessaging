@@ -1,5 +1,17 @@
 var app = angular.module('myApp', ['ngRoute']);
 
+app.service('formService', [function () {
+    this.serializeObject = function ($ele) {
+        var $txt = $ele.find('input[type="text"], input[type="password"]');
+        var obj = {};
+        $txt.each(function (index, $val) {
+            obj[$val.title] = $val.value;
+        });
+        console.log(obj);
+        return obj;
+    }
+}]);
+
 app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
         .when('/login', {templateUrl: 'views/login.html', controller: 'myController'})
@@ -11,7 +23,7 @@ app.config(['$routeProvider', function ($routeProvider) {
         .otherwise({redirectTo: '/login'});
 }]);
 
-app.controller('myController',  ['$scope', '$window', function ($scope, $window) {
+app.controller('myController',  ['$scope', '$window', '$http', function ($scope, $window, $http) {
     if(sessionStorage.logUser){
         return $window.location.href = "#/home";
     }
@@ -25,14 +37,22 @@ app.controller('myController',  ['$scope', '$window', function ($scope, $window)
             $scope.password_show = true;
         }
         else{
-            var users = JSON.parse(localStorage.users);
-            for(var key in users){
-                if(users[key].username == $scope.login_username && users[key].password == $scope.login_password){
-                    sessionStorage.logUser = JSON.stringify(users[key]);
-                    return $window.location.href = "#/home";
-                }
-            }
-            box("The username and password are not matched", true);
+            $http.post('/getuser', {"username":$scope.login_username,"password":$scope.login_password})
+                .success(function (data) {
+                    //console.log(data);
+                    if(data.status === 200){
+                        $http.post('/login', {"username":$scope.login_username,"password":$scope.login_password})
+                            .success(function (data) {
+                                console.log(data);
+                                if(data.status === 200){
+                                    return $window.location.href = "#/home";
+                                }
+                            });
+                    }else {
+                        box("The username and password are not matched", true);
+                    }
+                });
+
         }
     };
     $scope.register = function () {
@@ -40,7 +60,7 @@ app.controller('myController',  ['$scope', '$window', function ($scope, $window)
     };
 }]);
 
-app.controller('registerController', ['$scope', '$window', function ($scope, $window) {
+app.controller('registerController', ['$scope', '$window', '$http', 'formService', function ($scope, $window, $http, formService) {
     function clearAll() {
         for(var key in $scope.newuser){
             $scope.newuser[key] = "";
@@ -48,25 +68,18 @@ app.controller('registerController', ['$scope', '$window', function ($scope, $wi
     }
     $scope.submit_register = function () {
         var $form = $("#add_contact");
-        $.ajax({
-            type:'post',
-            url: 'http://127.0.0.1:8080/postuser?' + $form.serialize().toString(),
-            dataType: 'text'
-        }).done(function (data) {
-            data = JSON.parse(data);
-            console.log(data.status);
-            if (data.status == 200) {
-                box(data.text);
-            } else if (data.status == 400) {
-                box(data.text, true)
-            }
-            return $window.location.href = "#/login"
-        })
-            .fail(function () {
-                console.log("fail");
+        $http.post('/postuser', formService.serializeObject($form))
+            .success(function (data) {
+                console.log(data);
+                if (data.status == 200) {
+                    box(data.text);
+                } else if (data.status == 400) {
+                    box(data.text, true)
+                }
+                return $window.location.href = "#/login";
             })
-            .always(function () {
-                clearAll();
+            .error(function () {
+
             });
     };
     $scope.clear_all = function () {
@@ -74,10 +87,14 @@ app.controller('registerController', ['$scope', '$window', function ($scope, $wi
     }
 }]);
 
-app.controller('editController', ['$scope', '$window', function ($scope, $window) {
-    if(!sessionStorage.logUser){
-        return $window.location.href = '#/login';
-    }
+app.controller('editController', ['$scope', '$window', '$http', function ($scope, $window, $http) {
+    $http.get('/isloggedin')
+        .success(function (data) {
+            console.log("Is logged in? " + data);
+            if(!data){
+                return $window.location.href = '#/login';
+            }
+        });
     var user_info = JSON.parse(sessionStorage.logUser);
     $scope.edit_name = user_info.name;
     $scope.edit_password = user_info.password;
@@ -102,8 +119,10 @@ app.controller('editController', ['$scope', '$window', function ($scope, $window
         box("Reset Successfully!");
     };
     $scope.logout = function () {
-        sessionStorage.removeItem("logUser");
-        return $window.location.href = '#/login';
+        $http.post('/logout')
+            .success(function () {
+                return $window.location.href = '#/login';
+            });
     };
 }]);
 

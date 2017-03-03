@@ -1,10 +1,16 @@
 var mongoClient = require("mongodb").MongoClient,
     express = require('express'),
     app = express(),
+    session = require('express-session'),
+    MongoDBStore = require('connect-mongodb-session')(session),
+    bodyParser = require('body-parser'),
     fs = require('fs'),
     conn_str = "mongodb://localhost:27017/ass7";
 
-app.use(express.static('assets'));
+var store = new MongoDBStore({
+    uri:"mongodb://localhost:27017/ass7",
+    collection:'user_session'
+});
 
 var ajaxResult = {
     "OK": {
@@ -25,6 +31,21 @@ var ajaxResult = {
     }
 };
 
+app.use(express.static('assets'));
+app.use(bodyParser.json());
+app.use(
+    session({
+        secret:'ass7_sess_secret_key',
+        resave:true,
+        saveUninitialized:true,
+        store:store
+    })
+);
+
+store.on('error', function (req, res) {
+    console.log("error");
+});
+
 app.post('/postuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
@@ -33,15 +54,9 @@ app.post('/postuser', function (req, res) {
             var records = db.collection('users').find({"username":req.query.username});
             records.count(function (err, count) {
                 if(count === 0){
-                    var users = {
-                        "username": req.query.username,
-                        "password": req.query.password,
-                        "name": req.query.name,
-                        "location": req.query.location,
-                        "email": req.query.email,
-                        "number": req.query.number
-                    };
-                    insertData(db,'users', users);
+                    console.log(req.body);
+                    insertData(db,'users', req.body);
+                    //req.session.user = req.body;
                     res.send(ajaxResult.OK);
                 }else {
                     console.log("Not allowed to insert duplicated items");
@@ -53,12 +68,43 @@ app.post('/postuser', function (req, res) {
     });
 });
 
-app.get('/getuser', function (req, res) {
+app.get('/isloggedin', function (req, res) {
+    var isLoggedIn = req.session.user? true: false;
+    console.log(isLoggedIn);
+    res.send(isLoggedIn);
+});
+
+app.post('/login', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
-            var records = db.collection('users').find({"username":req.query.username});
+            db.collection('users').findOne({"username":req.body.username, "password": req.body.password}, function (err, data) {
+                req.session.user = data;
+                res.send(ajaxResult.FOUND);
+            });
+            db.close();
+        }
+    });
+    req.session.user = req.body;
+});
+
+app.post('/logout', function (req, res) {
+    req.session.user = null;
+    send(ajaxResult.OK);
+});
+
+app.get('/getloguser', function (req, res) {
+    res.send(req.session.user);
+});
+
+app.post('/getuser', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+        }else {
+            console.log(req.body);
+            var records = db.collection('users').find({"username":req.body.username, "password":req.body.password});
             records.count(function (err, count) {
                 if(count === 0){
                     res.send(ajaxResult.NOTFOUND);
@@ -92,7 +138,7 @@ function insertData(db, collection, obj) {
     devices.insert(obj, function(err, res){
         if(err) {
             console.log("error while inserting");
-        }else{
+        }else {
             console.log("finish inserting");
         }
     });
