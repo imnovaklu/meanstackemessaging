@@ -25,14 +25,25 @@ app.controller('myController',  ['$scope', '$window', function ($scope, $window)
             $scope.password_show = true;
         }
         else{
-            var users = JSON.parse(localStorage.users);
-            for(var key in users){
-                if(users[key].username == $scope.login_username && users[key].password == $scope.login_password){
-                    sessionStorage.logUser = JSON.stringify(users[key]);
-                    return $window.location.href = "#/home";
-                }
-            }
-            box("The username and password are not matched", true);
+            $.ajax({
+                type:'get',
+                url: 'http://127.0.0.1:8080/getuser?username=' + $scope.login_username + "&password=" + $scope.login_password,
+                dataType: 'text'
+            })
+                .done(function (data) {
+                    console.log(data);
+                    //sessionStorage.logUser = JSON.stringify(data);
+                    //var user = JSON.parse(data);
+                    if(data !== "{}"){
+                        sessionStorage.logUser = data;
+                        return $window.location.href = "#/home";
+                    }else{
+                        box("The username and password are not matched", true);
+                    }
+                })
+                .fail(function () {
+                    
+                });
         }
     };
     $scope.register = function () {

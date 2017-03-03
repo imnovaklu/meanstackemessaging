@@ -58,7 +58,35 @@ app.get('/getuser', function (req, res) {
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
-            var records = db.collection('users').find({"username":req.query.username});
+            db.collection('users').findOne({"username":req.query.username,"password":req.query.password}, function (err, data) {
+                console.log(data);
+                if(data == null){
+                    res.send({});
+                }else {
+                    res.send(data);
+                }
+                
+            });
+            
+            /*records.each(function (val) {
+                if(val == null){
+                    res.send(ajaxResult.NOTFOUND);
+                }else {
+                    console.log(val);
+                    res.send({"status":200,"text":"", "data":val})
+                }
+                db.close();
+            });*/
+        }
+    });
+});
+
+app.get('/finduser', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+        }else {
+            var records = db.collection('users').find({"username":req.query.username,"password":req.query.password});
             records.count(function (err, count) {
                 if(count === 0){
                     res.send(ajaxResult.NOTFOUND);
