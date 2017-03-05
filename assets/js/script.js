@@ -12,6 +12,22 @@ app.service('formService', [function () {
     }
 }]);
 
+app.service('boxService', [function () {
+    this.box = function (str, alert) {
+        var $box = jQuery("#informationBox");
+        if(alert != undefined){
+            $box.addClass("alertBox");
+        }else {
+            $box.removeClass("alertBox");
+        }
+        $box.html(str);
+        $box.addClass("confirmBox_down");
+        setTimeout(function () {
+            $box.removeClass("confirmBox_down");
+        },3000);
+    }
+}]);
+
 app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
         .when('/login', {templateUrl: 'views/login.html', controller: 'myController'})
@@ -23,7 +39,7 @@ app.config(['$routeProvider', function ($routeProvider) {
         .otherwise({redirectTo: '/login'});
 }]);
 
-app.controller('myController',  ['$scope', '$window', '$http', function ($scope, $window, $http) {
+app.controller('myController',  ['$scope', '$window', '$http', 'boxService', function ($scope, $window, $http, boxService) {
     $http.get('/isloggedin')
         .success(function (data) {
             if(data){
@@ -52,7 +68,7 @@ app.controller('myController',  ['$scope', '$window', '$http', function ($scope,
                                 }
                             });
                     }else {
-                        box("The username and password are not matched", true);
+                        boxService.box("The username and password are not matched", true);
                     }
                 });
         }
@@ -62,7 +78,7 @@ app.controller('myController',  ['$scope', '$window', '$http', function ($scope,
     };
 }]);
 
-app.controller('registerController', ['$scope', '$window', '$http', 'formService', function ($scope, $window, $http, formService) {
+app.controller('registerController', ['$scope', '$window', '$http', 'formService', 'boxService', function ($scope, $window, $http, formService, boxService) {
     function clearAll() {
         for(var key in $scope.newuser){
             $scope.newuser[key] = "";
@@ -74,14 +90,13 @@ app.controller('registerController', ['$scope', '$window', '$http', 'formService
             .success(function (data) {
                 console.log(data);
                 if (data.status == 200) {
-                    box(data.text);
+                    boxService.box(data.text);
                 } else if (data.status == 400) {
-                    box(data.text, true)
+                    boxService.box(data.text, true)
                 }
                 return $window.location.href = "#/login";
             })
             .error(function () {
-
             });
     };
     $scope.clear_all = function () {
@@ -89,49 +104,63 @@ app.controller('registerController', ['$scope', '$window', '$http', 'formService
     }
 }]);
 
-app.controller('editController', ['$scope', '$window', '$http', function ($scope, $window, $http) {
+app.controller('editController', ['$scope', '$window', '$http', 'formService', 'boxService', function ($scope, $window, $http, formService, boxService) {
+    var user_info;
     $http.get('/isloggedin')
         .success(function (data) {
-            console.log("Is logged in? " + data);
             if(!data){
                 return $window.location.href = '#/login';
+            }else{
+                $http.get('/getloguser')
+                    .success(function (user) {
+                        user_info = jQuery.extend({}, user);
+                        $scope.user_info = user;
+                    })
             }
         });
-    var user_info = JSON.parse(sessionStorage.logUser);
-    $scope.edit_name = user_info.name;
-    $scope.edit_password = user_info.password;
-    $scope.edit_email = user_info.email;
-    $scope.edit_username = user_info.username;
-    $scope.edit_location = user_info.location;
-    $scope.edit_number = user_info.number;
+
     $scope.update = function () {
-        var user_info = {"username": $scope.edit_username, "password": $scope.edit_password, "name": $scope.edit_name, "location": $scope.edit_location, "email": $scope.edit_email, "number":$scope.edit_number};
-        var old_user_str = sessionStorage.logUser;
+        var new_user_info = formService.serializeObject($('#add_contact'));
+        $http.post('/updateuser', new_user_info)
+            .success(function (resp) {
+                if(resp.status == 200){
+                    boxService.box("Update User Information Successfully!");
+                }
+            });
+        //var user_info = {"username": $scope.edit_username, "password": $scope.edit_password, "name": $scope.edit_name, "location": $scope.edit_location, "email": $scope.edit_email, "number":$scope.edit_number};
+        /*var old_user_str = sessionStorage.logUser;
         var newStr = localStorage.users.replace(old_user_str, JSON.stringify(user_info));
         sessionStorage.logUser = JSON.stringify(user_info);
         localStorage.users = newStr;
-        box("Update User Information Successfully!");
+        box("Update User Information Successfully!");*/
     };
     $scope.reset = function () {
-        $scope.edit_name = user_info.name;
-        $scope.edit_password = user_info.password;
-        $scope.edit_email = user_info.email;
-        $scope.edit_location = user_info.location;
-        $scope.edit_number = user_info.number;
-        box("Reset Successfully!");
+        $scope.user_info = user_info;
+        boxService.box("Reset Successfully!");
     };
     $scope.logout = function () {
         $http.post('/logout')
-            .success(function () {
-                return $window.location.href = '#/login';
+            .success(function (res) {
+                if(res.status == 200){
+                    return $window.location.href = '#/login';
+                }
             });
     };
 }]);
 
-app.controller('messageController', ['$scope', '$window', '$rootScope', function ($scope, $window, $rootScope) {
-    var user_info = JSON.parse(sessionStorage.logUser);
+app.controller('messageController', ['$scope', '$window', '$rootScope', '$http', function ($scope, $window, $rootScope, $http) {
+    $http.get('getloguser')
+        .success(function (user) {
+            $http.get('/getlogusermessages')
+                .success(function (resp) {
+                    console.log(resp);
+                    $scope.message_username = user;
+                    $scope.messages = resp;
+                });
+        });
+    /*var user_info = JSON.parse(sessionStorage.logUser);
     $scope.message_username = user_info.username;
-    $scope.messages = JSON.parse(localStorage.messages);
+    $scope.messages = JSON.parse(localStorage.messages);*/
     $scope.logout = function () {
         sessionStorage.removeItem("logUser");
         return $window.location.href = '#/login';
@@ -167,11 +196,11 @@ app.controller('messageController', ['$scope', '$window', '$rootScope', function
         var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
         localStorage.messages = newStr;
         $scope.messages = JSON.parse(newStr);
-        box("setting successfully!")
+        boxService.box("setting successfully!")
     };
     var sendFn = function (important) {
         if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
-            box("Please fill in all text box", true);
+            boxService.box("Please fill in all text box", true);
             return false;
         }
         var user_info = JSON.parse(sessionStorage.logUser);
@@ -202,7 +231,7 @@ app.controller('messageDetailsController', ['$scope', '$rootScope', '$window', f
     }
 }]);
 
-app.directive('messageDirective', ['$compile', function ($compile) {
+app.directive('messageDirective', ['$compile', 'boxService', function ($compile, boxService) {
     return {
         templateUrl:'views/message_component.html',
         controller:'messageController',
@@ -220,7 +249,7 @@ app.directive('messageDirective', ['$compile', function ($compile) {
                 var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
                 localStorage.messages = newStr;
                 scope.important = !scope.important;
-                box("setting successfully!")
+                boxService.box("setting successfully!")
             };
         }
     };

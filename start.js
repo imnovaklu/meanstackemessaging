@@ -28,6 +28,10 @@ var ajaxResult = {
     "FOUND":{
         "status":200,
         "text":"Login in"
+    },
+    "CONNECTIONFAIL":{
+        "status":500,
+        "text":"MongoDB failed to connect"
     }
 };
 
@@ -70,7 +74,7 @@ app.post('/postuser', function (req, res) {
 
 app.get('/isloggedin', function (req, res) {
     var isLoggedIn = req.session.user? true: false;
-    console.log("is logged in: " + isLoggedIn);
+    //console.log("is logged in: " + isLoggedIn);
     res.send(isLoggedIn);
 });
 
@@ -91,7 +95,7 @@ app.post('/login', function (req, res) {
 
 app.post('/logout', function (req, res) {
     req.session.user = null;
-    send(ajaxResult.OK);
+    res.send(ajaxResult.OK);
 });
 
 app.get('/getloguser', function (req, res) {
@@ -102,6 +106,7 @@ app.post('/getuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
         }else {
             console.log(req.body);
             var records = db.collection('users').find({"username":req.body.username, "password":req.body.password});
@@ -112,6 +117,44 @@ app.post('/getuser', function (req, res) {
                     res.send(ajaxResult.FOUND);
                 }
                 db.close();
+            });
+        }
+    });
+});
+
+app.post('/updateuser', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            /*console.log("***********");
+            console.log(req.session.user);
+            console.log(req.body);
+            console.log("***********");*/
+            db.collection('users').update(req.session.user,req.body, function (err, result) {
+                if(!err){
+                    req.session.user = req.body;
+                    res.send(ajaxResult.OK);
+                }else {
+                    res.send(ajaxResult.CONNECTIONFAIL);
+                }
+            });
+        }
+    });
+});
+
+app.get('/getlogusermessages', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').find(req.session.user, function (err, result) {
+                if(!err){
+                    console.log(result.toArray());
+                    res.send(result.toArray());
+                }
             });
         }
     });
