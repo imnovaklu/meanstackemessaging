@@ -24,9 +24,12 @@ app.config(['$routeProvider', function ($routeProvider) {
 }]);
 
 app.controller('myController',  ['$scope', '$window', '$http', function ($scope, $window, $http) {
-    if(sessionStorage.logUser){
-        return $window.location.href = "#/home";
-    }
+    $http.get('/isloggedin')
+        .success(function (data) {
+            if(data){
+                return $window.location.href = '#/home';
+            }
+        });
     $scope.login = function () {
         $scope.username_show = false;
         $scope.password_show = false;

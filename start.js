@@ -70,7 +70,7 @@ app.post('/postuser', function (req, res) {
 
 app.get('/isloggedin', function (req, res) {
     var isLoggedIn = req.session.user? true: false;
-    console.log(isLoggedIn);
+    console.log("is logged in: " + isLoggedIn);
     res.send(isLoggedIn);
 });
 
