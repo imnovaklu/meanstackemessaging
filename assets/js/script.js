@@ -52,7 +52,6 @@ app.controller('myController',  ['$scope', '$window', '$http', function ($scope,
                         box("The username and password are not matched", true);
                     }
                 });
-
         }
     };
     $scope.register = function () {
