@@ -6,13 +6,13 @@
     </ul>
 </nav>
 <div id="container" style="width: 800px" ng-cloak="">
-    <h4 ng-if="messages">Empty Message Box ... {{messages}}</h4>
+    <h4 ng-if="messages.length == 0">Empty Message Box ...</h4>
     <!--<message-directive ng-repeat="item in messages" messageobj="{{item._id}}"></message-directive>-->
-    <div ng-class="{'container':true, 'container-green':important, 'container-white': !important}" ng-repeat="item in messages" messageobj="{{item._id}}">
-        <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}}  {{item.important}}</span>
+    <div ng-class="{'container':true, 'container-green':item.important, 'container-white': !item.important}" ng-repeat="item in messages" messageobj="{{item._id}}">
+        <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}} </span>
             <i class="fa fa-trash" ng-click="delete_message($event)"></i>
             <i class="fa fa-eye" ng-click="view_message($event)"></i>
-            <i class="fa fa-exclamation" ng-click="makeImp()"></i>
+            <i class="fa fa-exclamation" important="{{item.important}}" ng-click="make_important($event)"></i>
         </div>
         {{item.subject}}
     </div>

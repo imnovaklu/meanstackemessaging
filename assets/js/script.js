@@ -56,6 +56,16 @@ app.service('messageService', ['$http', function ($http) {
                     });
             });
     };
+
+    this.mark = function ($scope, element, callback) {
+        var imp = element.getAttribute("important") == "true"? false: true;
+        console.log(imp);
+        $http.post('/updatemessage', {"id": element.parentNode.parentNode.getAttribute("messageobj"), "important": imp})
+            .success(function (resp) {
+                $scope.messages = resp;
+                callback();
+            });
+    };
 }]);
 
 app.config(['$routeProvider', function ($routeProvider) {
@@ -145,16 +155,9 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
                 return $location.path('/login');
             }else{
                 userService.getLogUser(function (user) {
-                    console.log('***********');
-                    console.log(user);
                     user_info = jQuery.extend({}, user);
                     $scope.user_info = user;
                 });
-                /*$http.get('/getloguser')
-                    .success(function (user) {
-                        user_info = jQuery.extend({}, user);
-                        $scope.user_info = user;
-                    })*/
             }
         });
 
@@ -166,12 +169,6 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
                     boxService.box("Update User Information Successfully!");
                 }
             });
-        //var user_info = {"username": $scope.edit_username, "password": $scope.edit_password, "name": $scope.edit_name, "location": $scope.edit_location, "email": $scope.edit_email, "number":$scope.edit_number};
-        /*var old_user_str = sessionStorage.logUser;
-        var newStr = localStorage.users.replace(old_user_str, JSON.stringify(user_info));
-        sessionStorage.logUser = JSON.stringify(user_info);
-        localStorage.users = newStr;
-        box("Update User Information Successfully!");*/
     };
     $scope.reset = function () {
         $scope.user_info = user_info;
@@ -206,8 +203,6 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
     };
     $scope.delete_message = function ($event) {
         var tar = $event.target.parentNode.parentNode;
-        console.log(tar);
-        console.log(tar.getAttribute("messageobj"));
         $http.post('/deletemessage',{"id":tar.getAttribute("messageobj")})
             .success(function () {
                 $(tar).slideUp();
@@ -224,18 +219,21 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
         $scope.needViewMessage = false;
     };
     $scope.make_important = function ($event) {
-        var oldObjStr = $event.target.parentNode.parentNode.parentNode.getAttribute("messageobj");
+        /*var oldObjStr = $event.target.parentNode.parentNode.parentNode.getAttribute("messageobj");
         var newObj = JSON.parse(oldObjStr);
         newObj.important = !JSON.parse(oldObjStr).important;
         var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
         localStorage.messages = newStr;
-        $scope.messages = JSON.parse(newStr);
-        boxService.box("setting successfully!")
+        $scope.messages = JSON.parse(newStr);*/
+        console.log($event.target.parentNode.parentNode);
+        messageService.mark($scope,$event.target, function () {
+            boxService.box("setting successfully!");
+        });
+
     };
 
     $scope.send = function () {
         messageService.send($scope, false);
-        console.log($scope);
     };
     $scope.send_as_important = function () {
         messageService.send($scope, true);

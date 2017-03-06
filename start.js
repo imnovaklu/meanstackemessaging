@@ -60,7 +60,7 @@ app.post('/postuser', function (req, res) {
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
-            var records = db.collection('users').find({"username":req.query.username});
+            var records = db.collection('users').find({"username":req.body.username});
             records.count(function (err, count) {
                 if(count === 0){
                     console.log(req.body);
@@ -168,7 +168,6 @@ app.post('/getmessages', function (req, res) {
         }else {
             db.collection('messages').findOne({"_id":req.body.id},function (err, result) {
                 if(!err){
-                    console.log(result);
                     res.send(result);
                 }else {
                     res.send(ajaxResult.LOGOUT);
@@ -184,9 +183,31 @@ app.post('/postmessage', function (req, res) {
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            db.collection('messages').insert(req.body, function (err, result) {
+            db.collection('messages').insert(req.body, function (err) {
                 if(!err){
-                    res.send(ajaxResult.OK);
+                    db.collection('messages').find({"receiver":req.body.receiver}).toArray(function (err, result) {
+                        res.send(result);
+                    });
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+                db.close();
+            });
+        }
+    });
+});
+
+app.post('/updatemessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("error");
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').update({"_id": new mongodb.ObjectID(req.body.id)}, {$set: {"important":req.body.important}},function (err, result) {
+                if(!err){
+                    db.collection('messages').find({"receiver":req.session.user}).toArray(function (err, result) {
+                        res.send(result);
+                    });
                 }else {
                     res.send(ajaxResult.LOGOUT);
                 }
