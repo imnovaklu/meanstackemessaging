@@ -6,8 +6,8 @@
     </ul>
 </nav>
 <div id="container" style="width: 800px">
-    <message-directive ng-repeat="item in messages" ng-if="item.receiver == message_username"
-                       messageobj="{{item}}"></message-directive>
+    <h4 ng-if="messages">Empty Message Box ... {{messages}}</h4>
+    <message-directive ng-repeat="item in messages" messageobj="{{item._id}}"></message-directive>
     <button class="btn-blue submit_btn" style="display: inline-block" ng-click="open_send()">Send Message</button>
 </div>
 <div class="container container-black" style="width: 800px" ng-show="needSendMessage">

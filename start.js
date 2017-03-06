@@ -32,6 +32,10 @@ var ajaxResult = {
     "CONNECTIONFAIL":{
         "status":500,
         "text":"MongoDB failed to connect"
+    },
+    "LOGOUT":{
+        "status": 405,
+        "text": "You have to login in"
     }
 };
 
@@ -74,7 +78,6 @@ app.post('/postuser', function (req, res) {
 
 app.get('/isloggedin', function (req, res) {
     var isLoggedIn = req.session.user? true: false;
-    //console.log("is logged in: " + isLoggedIn);
     res.send(isLoggedIn);
 });
 
@@ -150,10 +153,11 @@ app.get('/getlogusermessages', function (req, res) {
             console.log("Error happened while connecting to MongoDB");
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            db.collection('messages').find(req.session.user, function (err, result) {
+            db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
                 if(!err){
-                    console.log(result.toArray());
-                    res.send(result.toArray());
+                    res.send(result);
+                }else {
+                    res.send(ajaxResult.LOGOUT);
                 }
             });
         }

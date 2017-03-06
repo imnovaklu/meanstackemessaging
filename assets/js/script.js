@@ -39,11 +39,11 @@ app.config(['$routeProvider', function ($routeProvider) {
         .otherwise({redirectTo: '/login'});
 }]);
 
-app.controller('myController',  ['$scope', '$window', '$http', 'boxService', function ($scope, $window, $http, boxService) {
+app.controller('myController',  ['$scope', '$window', '$http', '$location', 'boxService', function ($scope, $window, $http, $location, boxService) {
     $http.get('/isloggedin')
         .success(function (data) {
             if(data){
-                return $window.location.href = '#/home';
+                $location.path('/home');
             }
         });
     $scope.login = function () {
@@ -78,7 +78,7 @@ app.controller('myController',  ['$scope', '$window', '$http', 'boxService', fun
     };
 }]);
 
-app.controller('registerController', ['$scope', '$window', '$http', 'formService', 'boxService', function ($scope, $window, $http, formService, boxService) {
+app.controller('registerController', ['$scope', '$location', '$http', 'formService', 'boxService', function ($scope, $location, $http, formService, boxService) {
     function clearAll() {
         for(var key in $scope.newuser){
             $scope.newuser[key] = "";
@@ -88,28 +88,31 @@ app.controller('registerController', ['$scope', '$window', '$http', 'formService
         var $form = $("#add_contact");
         $http.post('/postuser', formService.serializeObject($form))
             .success(function (data) {
-                console.log(data);
                 if (data.status == 200) {
                     boxService.box(data.text);
                 } else if (data.status == 400) {
                     boxService.box(data.text, true)
                 }
-                return $window.location.href = "#/login";
+                clearAll();//+
+                $location.path("/login");
             })
             .error(function () {
             });
     };
     $scope.clear_all = function () {
         clearAll();
-    }
+    };
+    $scope.back_login = function () {
+        $location.path('/login');
+    };
 }]);
 
-app.controller('editController', ['$scope', '$window', '$http', 'formService', 'boxService', function ($scope, $window, $http, formService, boxService) {
+app.controller('editController', ['$scope', '$location', '$http', 'formService', 'boxService', function ($scope, $location, $http, formService, boxService) {
     var user_info;
     $http.get('/isloggedin')
         .success(function (data) {
             if(!data){
-                return $window.location.href = '#/login';
+                return $location.path('/login');
             }else{
                 $http.get('/getloguser')
                     .success(function (user) {
@@ -142,13 +145,13 @@ app.controller('editController', ['$scope', '$window', '$http', 'formService', '
         $http.post('/logout')
             .success(function (res) {
                 if(res.status == 200){
-                    return $window.location.href = '#/login';
+                    $location.path('#/login');
                 }
             });
     };
 }]);
 
-app.controller('messageController', ['$scope', '$window', '$rootScope', '$http', function ($scope, $window, $rootScope, $http) {
+app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', function ($scope, $location, $rootScope, $http, boxService) {
     $http.get('getloguser')
         .success(function (user) {
             $http.get('/getlogusermessages')
@@ -158,12 +161,13 @@ app.controller('messageController', ['$scope', '$window', '$rootScope', '$http',
                     $scope.messages = resp;
                 });
         });
-    /*var user_info = JSON.parse(sessionStorage.logUser);
-    $scope.message_username = user_info.username;
-    $scope.messages = JSON.parse(localStorage.messages);*/
     $scope.logout = function () {
-        sessionStorage.removeItem("logUser");
-        return $window.location.href = '#/login';
+        $http.post('/logout')
+            .success(function (res) {
+                if(res.status == 200){
+                    $location.path('#/login');
+                }
+            });
     };
     $scope.delete_message = function ($event) {
         var $tar = $event.target.parentNode.parentNode.parentNode;
@@ -175,7 +179,7 @@ app.controller('messageController', ['$scope', '$window', '$rootScope', '$http',
             localStorage.messages = localStorage.messages.replace(deleting + ",", "");
             document.getElementById("container").removeChild($tar);
         }else {
-            alert("Error");
+            boxService.box("Unable to delete this message", true);
         }
     };
     $scope.view_message = function ($event) {
@@ -183,7 +187,7 @@ app.controller('messageController', ['$scope', '$window', '$rootScope', '$http',
         $rootScope.thisMessage = thisMes;
         var timestamp = thisMes.timestamp;
         //$location.path("#/message/" + timestamp);
-        $window.location.href = '#/message/' + timestamp;
+        $location.path('/message/' + timestamp);
     };
     $scope.open_send = function () {
         $scope.needSendMessage = true;
@@ -236,6 +240,9 @@ app.directive('messageDirective', ['$compile', 'boxService', function ($compile,
         templateUrl:'views/message_component.html',
         controller:'messageController',
         restrict:'E',
+        scope:{
+            
+        },
         link:function (scope, elem, attrs) {
             var obj = JSON.parse(attrs.messageobj);
             scope.important = obj.important;

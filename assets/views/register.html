@@ -1,4 +1,4 @@
-<div id="container" class="edit_info">
+<div id="container" class="edit_info" ng-cloak="">
     <form id="add_contact">
         <label>Username</label>
         <input type="text" title="username" placeholder="username" ng-model="newuser.username" name="username"/>
@@ -16,8 +16,9 @@
         <input type="text" title="email" placeholder="email" ng-model="newuser.email" name="email"/>
         <br/>
         <label>Number</label>
-        <input type="text" title="contact number" placeholder="contact number" ng-model="newuser.number" name="number"/>
+        <input type="text" title="number" placeholder="contact number" ng-model="newuser.number" name="number"/>
         <button class="btn-green submit_btn horizontal-lined" ng-click="submit_register()">Submit</button>
         <button class="btn-green submit_btn horizontal-lined" ng-click="clear_all()">Clear All</button>
+        <button class="btn-blue submit_btn horizontal-lined" ng-click="back_login()">Back to Login</button>
     </form>
 </div>
