@@ -1,4 +1,5 @@
-var mongoClient = require("mongodb").MongoClient,
+var mongodb = require('mongodb'),
+    mongoClient = mongodb.MongoClient,
     express = require('express'),
     app = express(),
     session = require('express-session'),
@@ -28,6 +29,14 @@ var ajaxResult = {
     "FOUND":{
         "status":200,
         "text":"Login in"
+    },
+    "CONNECTIONFAIL":{
+        "status":500,
+        "text":"MongoDB failed to connect"
+    },
+    "LOGOUT":{
+        "status": 405,
+        "text": "You have to login in"
     }
 };
 
@@ -70,7 +79,6 @@ app.post('/postuser', function (req, res) {
 
 app.get('/isloggedin', function (req, res) {
     var isLoggedIn = req.session.user? true: false;
-    console.log("is logged in: " + isLoggedIn);
     res.send(isLoggedIn);
 });
 
@@ -91,7 +99,7 @@ app.post('/login', function (req, res) {
 
 app.post('/logout', function (req, res) {
     req.session.user = null;
-    send(ajaxResult.OK);
+    res.send(ajaxResult.OK);
 });
 
 app.get('/getloguser', function (req, res) {
@@ -102,6 +110,7 @@ app.post('/getuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
         }else {
             console.log(req.body);
             var records = db.collection('users').find({"username":req.body.username, "password":req.body.password});
@@ -116,6 +125,81 @@ app.post('/getuser', function (req, res) {
         }
     });
 });
+
+app.post('/updateuser', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            /*console.log("***********");
+            console.log(req.session.user);
+            console.log(req.body);
+            console.log("***********");*/
+            db.collection('users').update(req.session.user,req.body, function (err, result) {
+                if(!err){
+                    req.session.user = req.body;
+                    res.send(ajaxResult.OK);
+                }else {
+                    res.send(ajaxResult.CONNECTIONFAIL);
+                }
+            });
+        }
+    });
+});
+
+app.get('/getlogusermessages', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            console.log("Error happened while connecting to MongoDB");
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
+                if(!err){
+                    res.send(result);
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+            });
+        }
+    });
+});
+
+app.post('/getmessages', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').findOne({"_id":req.body.id},function (err, result) {
+                if(!err){
+                    console.log(result);
+                    res.send(result);
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+            });
+        }
+    });
+});
+
+app.post('/deletemessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            console.log(req.body.id);
+            db.collection('messages').remove({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
+                //console.log(result);
+                if(!err){
+                    res.send(ajaxResult.OK);
+                }else {
+                    res.send(ajaxResult.NOTFOUND);
+                }
+            });
+        }
+    });
+});
+
 
 app.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');

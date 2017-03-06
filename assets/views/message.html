@@ -5,9 +5,17 @@
         <li ng-click="logout()"><a><i class="fa fa-sign-out"></i>Logout</a></li>
     </ul>
 </nav>
-<div id="container" style="width: 800px">
-    <message-directive ng-repeat="item in messages" ng-if="item.receiver == message_username"
-                       messageobj="{{item}}"></message-directive>
+<div id="container" style="width: 800px" ng-cloak="">
+    <h4 ng-if="messages">Empty Message Box ... {{messages}}</h4>
+    <!--<message-directive ng-repeat="item in messages" messageobj="{{item._id}}"></message-directive>-->
+    <div ng-class="{'container':true, 'container-green':important, 'container-white': !important}" ng-repeat="item in messages" messageobj="{{item._id}}">
+        <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}}  {{item.important}}</span>
+            <i class="fa fa-trash" ng-click="delete_message($event)"></i>
+            <i class="fa fa-eye" ng-click="view_message($event)"></i>
+            <i class="fa fa-exclamation" ng-click="makeImp()"></i>
+        </div>
+        {{item.subject}}
+    </div>
     <button class="btn-blue submit_btn" style="display: inline-block" ng-click="open_send()">Send Message</button>
 </div>
 <div class="container container-black" style="width: 800px" ng-show="needSendMessage">
