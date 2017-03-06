@@ -16,7 +16,7 @@ var store = new MongoDBStore({
 var ajaxResult = {
     "OK": {
         "status":200,
-        "text":"Register successfully!"
+        "text":"successful Operation!"
     },
     "DUPLICATED": {
         "status":400,
@@ -132,10 +132,6 @@ app.post('/updateuser', function (req, res) {
             console.log("Error happened while connecting to MongoDB");
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            /*console.log("***********");
-            console.log(req.session.user);
-            console.log(req.body);
-            console.log("***********");*/
             db.collection('users').update(req.session.user,req.body, function (err, result) {
                 if(!err){
                     req.session.user = req.body;
@@ -177,6 +173,24 @@ app.post('/getmessages', function (req, res) {
                 }else {
                     res.send(ajaxResult.LOGOUT);
                 }
+                db.close();
+            });
+        }
+    });
+});
+
+app.post('/postmessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').insert(req.body, function (err, result) {
+                if(!err){
+                    res.send(ajaxResult.OK);
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+                db.close();
             });
         }
     });
@@ -195,6 +209,7 @@ app.post('/deletemessage', function (req, res) {
                 }else {
                     res.send(ajaxResult.NOTFOUND);
                 }
+                db.close();
             });
         }
     });

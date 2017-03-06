@@ -1,5 +1,14 @@
 var app = angular.module('myApp', ['ngRoute']);
 
+app.service('userService', ['$http', function ($http) {
+    this.getLogUser = function (callback) {
+        $http.get('/getloguser')
+            .success(function (resp){
+                callback(resp);
+            })
+    }
+}]);
+
 app.service('formService', [function () {
     this.serializeObject = function ($ele) {
         var $txt = $ele.find('input[type="text"], input[type="password"]');
@@ -7,7 +16,6 @@ app.service('formService', [function () {
         $txt.each(function (index, $val) {
             obj[$val.title] = $val.value;
         });
-        console.log(obj);
         return obj;
     }
 }]);
@@ -26,6 +34,28 @@ app.service('boxService', [function () {
             $box.removeClass("confirmBox_down");
         },3000);
     }
+}]);
+
+app.service('messageService', ['$http', function ($http) {
+    this.send = function ($scope, important) {
+        if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
+            boxService.box("Please fill in all text box", true);
+            return false;
+        }
+        $http.get('/getloguser')
+            .success(function (loguser) {
+                var date = new Date();
+                var mes = {"sender":loguser.username, "receiver":$scope.receiver,"date":date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear(),"subject":$scope.subject,"content":$scope.content,"important":important};
+                $http.post('/postmessage', mes)
+                    .success(function (resp) {
+                        $scope.messages = resp;
+                        $scope.receiver = "";
+                        $scope.subject = "";
+                        $scope.content = "";
+                        $scope.needSendMessage = false;
+                    });
+            });
+    };
 }]);
 
 app.config(['$routeProvider', function ($routeProvider) {
@@ -107,18 +137,24 @@ app.controller('registerController', ['$scope', '$location', '$http', 'formServi
     };
 }]);
 
-app.controller('editController', ['$scope', '$location', '$http', 'formService', 'boxService', function ($scope, $location, $http, formService, boxService) {
+app.controller('editController', ['$scope', '$location', '$http', 'formService', 'boxService', 'userService', function ($scope, $location, $http, formService, boxService, userService) {
     var user_info;
     $http.get('/isloggedin')
         .success(function (data) {
             if(!data){
                 return $location.path('/login');
             }else{
-                $http.get('/getloguser')
+                userService.getLogUser(function (user) {
+                    console.log('***********');
+                    console.log(user);
+                    user_info = jQuery.extend({}, user);
+                    $scope.user_info = user;
+                });
+                /*$http.get('/getloguser')
                     .success(function (user) {
                         user_info = jQuery.extend({}, user);
                         $scope.user_info = user;
-                    })
+                    })*/
             }
         });
 
@@ -151,12 +187,11 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
     };
 }]);
 
-app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', function ($scope, $location, $rootScope, $http, boxService) {
+app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', 'messageService', function ($scope, $location, $rootScope, $http, boxService, messageService) {
     $http.get('getloguser')
         .success(function (user) {
             $http.get('/getlogusermessages')
                 .success(function (resp) {
-                    console.log(resp);
                     $scope.message_username = user;
                     $scope.messages = resp;
                 });
@@ -177,21 +212,11 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
             .success(function () {
                 $(tar).slideUp();
             });
-        /*if(localStorage.messages.indexOf("," + deleting) > -1){
-            localStorage.messages = localStorage.messages.replace("," + deleting, "");
-            document.getElementById("container").removeChild($tar);
-        }else if(localStorage.messages.indexOf(deleting + ",") > -1){
-            localStorage.messages = localStorage.messages.replace(deleting + ",", "");
-            document.getElementById("container").removeChild($tar);
-        }else {
-            boxService.box("Unable to delete this message", true);
-        }*/
     };
     $scope.view_message = function ($event) {
         var thisMes = JSON.parse($event.target.parentNode.parentNode.parentNode.getAttribute("messageobj"));
         $rootScope.thisMessage = thisMes;
         var timestamp = thisMes.timestamp;
-        //$location.path("#/message/" + timestamp);
         $location.path('/message/' + timestamp);
     };
     $scope.open_send = function () {
@@ -207,29 +232,13 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
         $scope.messages = JSON.parse(newStr);
         boxService.box("setting successfully!")
     };
-    var sendFn = function (important) {
-        if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
-            boxService.box("Please fill in all text box", true);
-            return false;
-        }
-        var user_info = JSON.parse(sessionStorage.logUser);
-        var date = new Date();
-        var timestamp = (new Date()).valueOf();
-        var mes = {"sender":user_info.username, "receiver":$scope.receiver,"date":date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear(),"subject":$scope.subject,"content":$scope.content,"important":important,"timestamp":timestamp};
-        var messages_arr = JSON.parse(localStorage.messages);
-        messages_arr.push(mes);
-        localStorage.messages = JSON.stringify(messages_arr);
-        $scope.messages = messages_arr;
-        $scope.receiver = "";
-        $scope.subject = "";
-        $scope.content = "";
-        $scope.needSendMessage = false;
-    };
+
     $scope.send = function () {
-        sendFn(false);
+        messageService.send($scope, false);
+        console.log($scope);
     };
     $scope.send_as_important = function () {
-        sendFn(true);
+        messageService.send($scope, true);
     };
 }]);
 
