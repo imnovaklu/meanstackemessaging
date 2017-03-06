@@ -1,4 +1,5 @@
-var mongoClient = require("mongodb").MongoClient,
+var mongodb = require('mongodb'),
+    mongoClient = mongodb.MongoClient,
     express = require('express'),
     app = express(),
     session = require('express-session'),
@@ -163,6 +164,42 @@ app.get('/getlogusermessages', function (req, res) {
         }
     });
 });
+
+app.post('/getmessages', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').findOne({"_id":req.body.id},function (err, result) {
+                if(!err){
+                    console.log(result);
+                    res.send(result);
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+            });
+        }
+    });
+});
+
+app.post('/deletemessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            console.log(req.body.id);
+            db.collection('messages').remove({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
+                //console.log(result);
+                if(!err){
+                    res.send(ajaxResult.OK);
+                }else {
+                    res.send(ajaxResult.NOTFOUND);
+                }
+            });
+        }
+    });
+});
+
 
 app.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');

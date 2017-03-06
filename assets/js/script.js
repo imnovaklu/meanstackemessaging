@@ -170,9 +170,14 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
             });
     };
     $scope.delete_message = function ($event) {
-        var $tar = $event.target.parentNode.parentNode.parentNode;
-        var deleting = $tar.getAttribute("messageobj");
-        if(localStorage.messages.indexOf("," + deleting) > -1){
+        var tar = $event.target.parentNode.parentNode;
+        console.log(tar);
+        console.log(tar.getAttribute("messageobj"));
+        $http.post('/deletemessage',{"id":tar.getAttribute("messageobj")})
+            .success(function () {
+                $(tar).slideUp();
+            });
+        /*if(localStorage.messages.indexOf("," + deleting) > -1){
             localStorage.messages = localStorage.messages.replace("," + deleting, "");
             document.getElementById("container").removeChild($tar);
         }else if(localStorage.messages.indexOf(deleting + ",") > -1){
@@ -180,7 +185,7 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
             document.getElementById("container").removeChild($tar);
         }else {
             boxService.box("Unable to delete this message", true);
-        }
+        }*/
     };
     $scope.view_message = function ($event) {
         var thisMes = JSON.parse($event.target.parentNode.parentNode.parentNode.getAttribute("messageobj"));
@@ -235,29 +240,16 @@ app.controller('messageDetailsController', ['$scope', '$rootScope', '$window', f
     }
 }]);
 
-app.directive('messageDirective', ['$compile', 'boxService', function ($compile, boxService) {
+app.directive('messageDirective', ['$compile', '$http', 'boxService', function ($compile, $http, boxService) {
     return {
         templateUrl:'views/message_component.html',
         controller:'messageController',
         restrict:'E',
-        scope:{
-            
-        },
         link:function (scope, elem, attrs) {
-            var obj = JSON.parse(attrs.messageobj);
-            scope.important = obj.important;
-            scope.sender = obj.sender;
-            scope.date = obj.date;
-            scope.subject = obj.subject;
-            scope.makeImp = function () {
-                var oldObjStr = elem[0].getAttribute("messageobj");
-                var newObj = JSON.parse(oldObjStr);
-                newObj.important = !JSON.parse(oldObjStr).important;
-                var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
-                localStorage.messages = newStr;
-                scope.important = !scope.important;
-                boxService.box("setting successfully!")
-            };
+            $http.post('/getmessages', {"id":attrs.messageobj})
+                .success(function (resp) {
+                    console.log(resp);
+                });
         }
     };
 }]);
