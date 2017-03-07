@@ -10,23 +10,12 @@
     <!--<message-directive ng-repeat="item in messages" messageobj="{{item._id}}"></message-directive>-->
     <div ng-class="{'container':true, 'container-green':item.important, 'container-white': !item.important}" ng-repeat="item in messages" messageobj="{{item._id}}">
         <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}} </span>
-            <i class="fa fa-trash" ng-click="delete_message($event)"></i>
-            <i class="fa fa-eye" ng-click="view_message($event)"></i>
-            <i class="fa fa-exclamation" important="{{item.important}}" ng-click="make_important($event)"></i>
+            <i class="fa fa-trash" data-toggle="tooltip" title="delete" ng-click="delete_message($event)"></i>
+            <i class="fa fa-eye" data-toggle="tooltip" title="view" ng-click="view_message($event)"></i>
+            <i class="fa fa-exclamation" data-toggle="tooltip" title="mark as important" important="{{item.important}}" ng-click="make_important($event)"></i>
         </div>
         {{item.subject}}
+        <i class="fa fa-reply" data-toggle="tooltip" title="reply" replyto="{{item.sender}}" ng-click="reply_message($event)"></i>
     </div>
     <button class="btn-blue submit_btn" style="display: inline-block" ng-click="open_send()">Send Message</button>
-</div>
-<div class="container container-black" style="width: 800px" ng-show="needSendMessage">
-    <form class="message_form" style="text-align: center">
-        <label>To</label>
-        <input type="text" ng-model="receiver"/>
-        <label>Subject</label>
-        <input type="text" ng-model="subject"/>
-        <label></label>
-        <textarea style="height: 400px; text-shadow: none" ng-model="content" placeholder="message here..."></textarea>
-        <button class="btn-blue submit_btn horizontal-lined" ng-click="send()">Send</button>
-        <button class="btn-orange submit_btn horizontal-lined" ng-click="send_as_important()">Send As Important</button>
-    </form>
 </div>

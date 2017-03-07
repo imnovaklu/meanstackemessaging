@@ -36,7 +36,7 @@ app.service('boxService', [function () {
     }
 }]);
 
-app.service('messageService', ['$http', function ($http) {
+app.service('messageService', ['$http', '$location', function ($http, $location) {
     this.send = function ($scope, important) {
         if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
             boxService.box("Please fill in all text box", true);
@@ -52,9 +52,14 @@ app.service('messageService', ['$http', function ($http) {
                         $scope.receiver = "";
                         $scope.subject = "";
                         $scope.content = "";
-                        $scope.needSendMessage = false;
+                        $location.path('/message');
                     });
             });
+    };
+
+    this.view = function (element) {
+        var message_id = element.parentNode.parentNode.getAttribute("messageobj");
+        $location.path('/message/view/' + message_id);
     };
 
     this.mark = function ($scope, element, callback) {
@@ -66,6 +71,14 @@ app.service('messageService', ['$http', function ($http) {
                 callback();
             });
     };
+
+    this.showMessage = function ($scope, id) {
+        $http.post('/getmessagebyid', {"id":id})
+            .success(function (resp) {
+                console.log(resp);
+                $scope.logUser = resp;
+            });
+    };
 }]);
 
 app.config(['$routeProvider', function ($routeProvider) {
@@ -75,11 +88,12 @@ app.config(['$routeProvider', function ($routeProvider) {
         .when('/home', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/profile', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/message', {templateUrl: 'views/message.html', controller: 'messageController'})
-        .when('/message/:id', {templateUrl:'views/message_details.html', controller: 'messageDetailsController'})
+        .when('/message/view/:id', {templateUrl:'views/message_details.html', controller: 'messageDetailsController'})
+        .when('/message/send', {templateUrl: 'views/message_send.html', controller:'messageController'})
         .otherwise({redirectTo: '/login'});
 }]);
 
-app.controller('myController',  ['$scope', '$window', '$http', '$location', 'boxService', function ($scope, $window, $http, $location, boxService) {
+app.controller('myController',  ['$scope', '$http', '$location', 'boxService', function ($scope, $http, $location, boxService) {
     $http.get('/isloggedin')
         .success(function (data) {
             if(data){
@@ -98,13 +112,12 @@ app.controller('myController',  ['$scope', '$window', '$http', '$location', 'box
         else{
             $http.post('/getuser', {"username":$scope.login_username,"password":$scope.login_password})
                 .success(function (data) {
-                    //console.log(data);
                     if(data.status === 200){
                         $http.post('/login', {"username":$scope.login_username,"password":$scope.login_password})
                             .success(function (data) {
                                 console.log(data);
                                 if(data.status === 200){
-                                    return $window.location.href = "#/home";
+                                    return $location.path("/home");
                                 }
                             });
                     }else {
@@ -114,7 +127,7 @@ app.controller('myController',  ['$scope', '$window', '$http', '$location', 'box
         }
     };
     $scope.register = function () {
-        $window.location.href = "#/register";
+        $location.path("/register");
     };
 }]);
 
@@ -130,11 +143,11 @@ app.controller('registerController', ['$scope', '$location', '$http', 'formServi
             .success(function (data) {
                 if (data.status == 200) {
                     boxService.box(data.text);
+                    clearAll();
+                    $location.path("/login");
                 } else if (data.status == 400) {
-                    boxService.box(data.text, true)
+                    boxService.box(data.text, true);
                 }
-                clearAll();//+
-                $location.path("/login");
             })
             .error(function () {
             });
@@ -185,12 +198,18 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
 }]);
 
 app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', 'messageService', function ($scope, $location, $rootScope, $http, boxService, messageService) {
+    if($rootScope.receiver){
+        $scope.receiver = $rootScope.receiver;
+        $rootScope.receiver = null;
+    }
     $http.get('getloguser')
         .success(function (user) {
             $http.get('/getlogusermessages')
                 .success(function (resp) {
                     $scope.message_username = user;
                     $scope.messages = resp;
+                    console.log($("[data-toggle='tooltip']"));
+                    $("[data-toggle='tooltip']").tooltip();
                 });
         });
     $scope.logout = function () {
@@ -209,29 +228,20 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
             });
     };
     $scope.view_message = function ($event) {
-        var thisMes = JSON.parse($event.target.parentNode.parentNode.parentNode.getAttribute("messageobj"));
-        $rootScope.thisMessage = thisMes;
-        var timestamp = thisMes.timestamp;
-        $location.path('/message/' + timestamp);
+        messageService.view($event.target);
     };
     $scope.open_send = function () {
-        $scope.needSendMessage = true;
-        $scope.needViewMessage = false;
+        $location.path('/message/send');
     };
     $scope.make_important = function ($event) {
-        /*var oldObjStr = $event.target.parentNode.parentNode.parentNode.getAttribute("messageobj");
-        var newObj = JSON.parse(oldObjStr);
-        newObj.important = !JSON.parse(oldObjStr).important;
-        var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
-        localStorage.messages = newStr;
-        $scope.messages = JSON.parse(newStr);*/
-        console.log($event.target.parentNode.parentNode);
         messageService.mark($scope,$event.target, function () {
             boxService.box("setting successfully!");
         });
-
     };
-
+    $scope.reply_message = function ($event) {
+        $rootScope.receiver = $event.target.getAttribute("replyto");
+        $location.path('/message/send');
+    };
     $scope.send = function () {
         messageService.send($scope, false);
     };
@@ -240,10 +250,10 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
     };
 }]);
 
-app.controller('messageDetailsController', ['$scope', '$rootScope', '$window', function ($scope, $rootScope, $window) {
-    $scope.logUser = $rootScope.thisMessage;
+app.controller('messageDetailsController', ['$scope', '$location', '$routeParams', 'messageService', function ($scope, $location, $routeParams, messageService) {
+    messageService.showMessage($scope, $routeParams.id);
     $scope.back = function () {
-        $window.location.href = "#/message";
+        $location.path("/message");
     }
 }]);
 

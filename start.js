@@ -156,17 +156,18 @@ app.get('/getlogusermessages', function (req, res) {
                 }else {
                     res.send(ajaxResult.LOGOUT);
                 }
+                db.close();
             });
         }
     });
 });
 
-app.post('/getmessages', function (req, res) {
+app.post('/getmessagebyid', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            db.collection('messages').findOne({"_id":req.body.id},function (err, result) {
+            db.collection('messages').findOne({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
                 if(!err){
                     res.send(result);
                 }else {
@@ -185,7 +186,7 @@ app.post('/postmessage', function (req, res) {
         }else {
             db.collection('messages').insert(req.body, function (err) {
                 if(!err){
-                    db.collection('messages').find({"receiver":req.body.receiver}).toArray(function (err, result) {
+                    db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
                         res.send(result);
                     });
                 }else {
@@ -200,12 +201,11 @@ app.post('/postmessage', function (req, res) {
 app.post('/updatemessage', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
-            console.log("error");
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
             db.collection('messages').update({"_id": new mongodb.ObjectID(req.body.id)}, {$set: {"important":req.body.important}},function (err, result) {
                 if(!err){
-                    db.collection('messages').find({"receiver":req.session.user}).toArray(function (err, result) {
+                    db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
                         res.send(result);
                     });
                 }else {
@@ -222,9 +222,7 @@ app.post('/deletemessage', function (req, res) {
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            console.log(req.body.id);
             db.collection('messages').remove({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
-                //console.log(result);
                 if(!err){
                     res.send(ajaxResult.OK);
                 }else {
