@@ -1,5 +1,14 @@
 var app = angular.module('myApp', ['ngRoute']);
 
+app.service('userService', ['$http', function ($http) {
+    this.getLogUser = function (callback) {
+        $http.get('/getloguser')
+            .success(function (resp){
+                callback(resp);
+            })
+    }
+}]);
+
 app.service('formService', [function () {
     this.serializeObject = function ($ele) {
         var $txt = $ele.find('input[type="text"], input[type="password"]');
@@ -7,7 +16,6 @@ app.service('formService', [function () {
         $txt.each(function (index, $val) {
             obj[$val.title] = $val.value;
         });
-        console.log(obj);
         return obj;
     }
 }]);
@@ -28,6 +36,51 @@ app.service('boxService', [function () {
     }
 }]);
 
+app.service('messageService', ['$http', '$location', function ($http, $location) {
+    this.send = function ($scope, important) {
+        if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
+            boxService.box("Please fill in all text box", true);
+            return false;
+        }
+        $http.get('/getloguser')
+            .success(function (loguser) {
+                var date = new Date();
+                var mes = {"sender":loguser.username, "receiver":$scope.receiver,"date":date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear(),"subject":$scope.subject,"content":$scope.content,"important":important};
+                $http.post('/postmessage', mes)
+                    .success(function (resp) {
+                        $scope.messages = resp;
+                        $scope.receiver = "";
+                        $scope.subject = "";
+                        $scope.content = "";
+                        $location.path('/message');
+                    });
+            });
+    };
+
+    this.view = function (element) {
+        var message_id = element.parentNode.parentNode.getAttribute("messageobj");
+        $location.path('/message/view' + message_id);
+    };
+
+    this.mark = function ($scope, element, callback) {
+        var imp = element.getAttribute("important") == "true"? false: true;
+        console.log(imp);
+        $http.post('/updatemessage', {"id": element.parentNode.parentNode.getAttribute("messageobj"), "important": imp})
+            .success(function (resp) {
+                $scope.messages = resp;
+                callback();
+            });
+    };
+
+    this.showMessage = function ($scope, id) {
+        $http.post('/getmessagebyid', {"id":id})
+            .success(function (resp) {
+                console.log(resp);
+                $scope.logUser = resp;
+            });
+    };
+}]);
+
 app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
         .when('/login', {templateUrl: 'views/login.html', controller: 'myController'})
@@ -35,7 +88,8 @@ app.config(['$routeProvider', function ($routeProvider) {
         .when('/home', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/profile', {templateUrl: 'views/home.html', controller: 'editController'})
         .when('/message', {templateUrl: 'views/message.html', controller: 'messageController'})
-        .when('/message/:id', {templateUrl:'views/message_details.html', controller: 'messageDetailsController'})
+        .when('/message/view/:id', {templateUrl:'views/message_details.html', controller: 'messageDetailsController'})
+        .when('/message/send', {templateUrl: 'views/message_send.html', controller:'messageController'})
         .otherwise({redirectTo: '/login'});
 }]);
 
@@ -107,18 +161,17 @@ app.controller('registerController', ['$scope', '$location', '$http', 'formServi
     };
 }]);
 
-app.controller('editController', ['$scope', '$location', '$http', 'formService', 'boxService', function ($scope, $location, $http, formService, boxService) {
+app.controller('editController', ['$scope', '$location', '$http', 'formService', 'boxService', 'userService', function ($scope, $location, $http, formService, boxService, userService) {
     var user_info;
     $http.get('/isloggedin')
         .success(function (data) {
             if(!data){
                 return $location.path('/login');
             }else{
-                $http.get('/getloguser')
-                    .success(function (user) {
-                        user_info = jQuery.extend({}, user);
-                        $scope.user_info = user;
-                    })
+                userService.getLogUser(function (user) {
+                    user_info = jQuery.extend({}, user);
+                    $scope.user_info = user;
+                });
             }
         });
 
@@ -130,12 +183,6 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
                     boxService.box("Update User Information Successfully!");
                 }
             });
-        //var user_info = {"username": $scope.edit_username, "password": $scope.edit_password, "name": $scope.edit_name, "location": $scope.edit_location, "email": $scope.edit_email, "number":$scope.edit_number};
-        /*var old_user_str = sessionStorage.logUser;
-        var newStr = localStorage.users.replace(old_user_str, JSON.stringify(user_info));
-        sessionStorage.logUser = JSON.stringify(user_info);
-        localStorage.users = newStr;
-        box("Update User Information Successfully!");*/
     };
     $scope.reset = function () {
         $scope.user_info = user_info;
@@ -151,12 +198,15 @@ app.controller('editController', ['$scope', '$location', '$http', 'formService',
     };
 }]);
 
-app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', function ($scope, $location, $rootScope, $http, boxService) {
+app.controller('messageController', ['$scope', '$location', '$rootScope', '$http', 'boxService', 'messageService', function ($scope, $location, $rootScope, $http, boxService, messageService) {
+    if($rootScope.receiver){
+        $scope.receiver = $rootScope.receiver;
+        $rootScope.receiver = null;
+    }
     $http.get('getloguser')
         .success(function (user) {
             $http.get('/getlogusermessages')
                 .success(function (resp) {
-                    console.log(resp);
                     $scope.message_username = user;
                     $scope.messages = resp;
                 });
@@ -171,72 +221,39 @@ app.controller('messageController', ['$scope', '$location', '$rootScope', '$http
     };
     $scope.delete_message = function ($event) {
         var tar = $event.target.parentNode.parentNode;
-        console.log(tar);
-        console.log(tar.getAttribute("messageobj"));
         $http.post('/deletemessage',{"id":tar.getAttribute("messageobj")})
             .success(function () {
                 $(tar).slideUp();
             });
-        /*if(localStorage.messages.indexOf("," + deleting) > -1){
-            localStorage.messages = localStorage.messages.replace("," + deleting, "");
-            document.getElementById("container").removeChild($tar);
-        }else if(localStorage.messages.indexOf(deleting + ",") > -1){
-            localStorage.messages = localStorage.messages.replace(deleting + ",", "");
-            document.getElementById("container").removeChild($tar);
-        }else {
-            boxService.box("Unable to delete this message", true);
-        }*/
     };
     $scope.view_message = function ($event) {
-        var thisMes = JSON.parse($event.target.parentNode.parentNode.parentNode.getAttribute("messageobj"));
-        $rootScope.thisMessage = thisMes;
-        var timestamp = thisMes.timestamp;
-        //$location.path("#/message/" + timestamp);
-        $location.path('/message/' + timestamp);
+        messageService.view($event.target);
     };
     $scope.open_send = function () {
-        $scope.needSendMessage = true;
-        $scope.needViewMessage = false;
+        $location.path('/message/send');
     };
     $scope.make_important = function ($event) {
-        var oldObjStr = $event.target.parentNode.parentNode.parentNode.getAttribute("messageobj");
-        var newObj = JSON.parse(oldObjStr);
-        newObj.important = !JSON.parse(oldObjStr).important;
-        var newStr = localStorage.messages.replace(oldObjStr, JSON.stringify(newObj));
-        localStorage.messages = newStr;
-        $scope.messages = JSON.parse(newStr);
-        boxService.box("setting successfully!")
+        messageService.mark($scope,$event.target, function () {
+            boxService.box("setting successfully!");
+        });
     };
-    var sendFn = function (important) {
-        if($scope.receiver == undefined || $scope.subject == undefined || $scope.content == undefined){
-            boxService.box("Please fill in all text box", true);
-            return false;
-        }
-        var user_info = JSON.parse(sessionStorage.logUser);
-        var date = new Date();
-        var timestamp = (new Date()).valueOf();
-        var mes = {"sender":user_info.username, "receiver":$scope.receiver,"date":date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear(),"subject":$scope.subject,"content":$scope.content,"important":important,"timestamp":timestamp};
-        var messages_arr = JSON.parse(localStorage.messages);
-        messages_arr.push(mes);
-        localStorage.messages = JSON.stringify(messages_arr);
-        $scope.messages = messages_arr;
-        $scope.receiver = "";
-        $scope.subject = "";
-        $scope.content = "";
-        $scope.needSendMessage = false;
+    $scope.reply_message = function ($event) {
+        $rootScope.receiver = $event.target.getAttribute("replyto");
+        $location.path('/message/send');
     };
     $scope.send = function () {
-        sendFn(false);
+        messageService.send($scope, false);
     };
     $scope.send_as_important = function () {
-        sendFn(true);
+        messageService.send($scope, true);
     };
 }]);
 
-app.controller('messageDetailsController', ['$scope', '$rootScope', '$window', function ($scope, $rootScope, $window) {
-    $scope.logUser = $rootScope.thisMessage;
+app.controller('messageDetailsController', ['$scope', '$location', '$routeParams', 'messageService', function ($scope, $location, $routeParams, messageService) {
+    console.log($routeParams.id);
+    messageService.showMessage($scope, $routeParams.id);
     $scope.back = function () {
-        $window.location.href = "#/message";
+        $location.path("/message");
     }
 }]);
 

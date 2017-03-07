@@ -16,7 +16,7 @@ var store = new MongoDBStore({
 var ajaxResult = {
     "OK": {
         "status":200,
-        "text":"Register successfully!"
+        "text":"successful Operation!"
     },
     "DUPLICATED": {
         "status":400,
@@ -60,7 +60,7 @@ app.post('/postuser', function (req, res) {
         if(err){
             console.log("Error happened while connecting to MongoDB");
         }else {
-            var records = db.collection('users').find({"username":req.query.username});
+            var records = db.collection('users').find({"username":req.body.username});
             records.count(function (err, count) {
                 if(count === 0){
                     console.log(req.body);
@@ -132,10 +132,6 @@ app.post('/updateuser', function (req, res) {
             console.log("Error happened while connecting to MongoDB");
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            /*console.log("***********");
-            console.log(req.session.user);
-            console.log(req.body);
-            console.log("***********");*/
             db.collection('users').update(req.session.user,req.body, function (err, result) {
                 if(!err){
                     req.session.user = req.body;
@@ -160,23 +156,62 @@ app.get('/getlogusermessages', function (req, res) {
                 }else {
                     res.send(ajaxResult.LOGOUT);
                 }
+                db.close();
             });
         }
     });
 });
 
-app.post('/getmessages', function (req, res) {
+app.post('/getmessagebyid', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            db.collection('messages').findOne({"_id":req.body.id},function (err, result) {
+            db.collection('messages').findOne({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
                 if(!err){
-                    console.log(result);
                     res.send(result);
                 }else {
                     res.send(ajaxResult.LOGOUT);
                 }
+                db.close();
+            });
+        }
+    });
+});
+
+app.post('/postmessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').insert(req.body, function (err) {
+                if(!err){
+                    db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
+                        res.send(result);
+                    });
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+                db.close();
+            });
+        }
+    });
+});
+
+app.post('/updatemessage', function (req, res) {
+    mongoClient.connect(conn_str, function(err, db){
+        if(err){
+            res.send(ajaxResult.CONNECTIONFAIL);
+        }else {
+            db.collection('messages').update({"_id": new mongodb.ObjectID(req.body.id)}, {$set: {"important":req.body.important}},function (err, result) {
+                if(!err){
+                    db.collection('messages').find({"receiver":req.session.user.username}).toArray(function (err, result) {
+                        res.send(result);
+                    });
+                }else {
+                    res.send(ajaxResult.LOGOUT);
+                }
+                db.close();
             });
         }
     });
@@ -187,7 +222,6 @@ app.post('/deletemessage', function (req, res) {
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
         }else {
-            console.log(req.body.id);
             db.collection('messages').remove({"_id": new mongodb.ObjectID(req.body.id)},function (err, result) {
                 //console.log(result);
                 if(!err){
@@ -195,6 +229,7 @@ app.post('/deletemessage', function (req, res) {
                 }else {
                     res.send(ajaxResult.NOTFOUND);
                 }
+                db.close();
             });
         }
     });

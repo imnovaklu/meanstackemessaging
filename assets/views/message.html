@@ -6,18 +6,20 @@
     </ul>
 </nav>
 <div id="container" style="width: 800px" ng-cloak="">
-    <h4 ng-if="messages">Empty Message Box ... {{messages}}</h4>
+    <h4 ng-if="messages.length == 0">Empty Message Box ...</h4>
     <!--<message-directive ng-repeat="item in messages" messageobj="{{item._id}}"></message-directive>-->
-    <div ng-class="{'container':true, 'container-green':important, 'container-white': !important}" ng-repeat="item in messages" messageobj="{{item._id}}">
-        <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}}  {{item.important}}</span>
+    <div ng-class="{'container':true, 'container-green':item.important, 'container-white': !item.important}" ng-repeat="item in messages" messageobj="{{item._id}}">
+        <div style="text-align: left"><span>Sender: "{{item.sender}}"</span>  <span>     Date: {{item.date}} </span>
             <i class="fa fa-trash" ng-click="delete_message($event)"></i>
             <i class="fa fa-eye" ng-click="view_message($event)"></i>
-            <i class="fa fa-exclamation" ng-click="makeImp()"></i>
+            <i class="fa fa-exclamation" important="{{item.important}}" ng-click="make_important($event)"></i>
         </div>
         {{item.subject}}
+        <i class="fa fa-reply" replyto="{{item.sender}}" ng-click="reply_message($event)"></i>
     </div>
     <button class="btn-blue submit_btn" style="display: inline-block" ng-click="open_send()">Send Message</button>
 </div>
+<!--
 <div class="container container-black" style="width: 800px" ng-show="needSendMessage">
     <form class="message_form" style="text-align: center">
         <label>To</label>
@@ -29,4 +31,4 @@
         <button class="btn-blue submit_btn horizontal-lined" ng-click="send()">Send</button>
         <button class="btn-orange submit_btn horizontal-lined" ng-click="send_as_important()">Send As Important</button>
     </form>
-</div>
+</div>-->

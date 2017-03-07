@@ -1,0 +1,19 @@
+<nav>
+    <ul>
+        <li><a href="#/profile"><i class="fa fa-file"></i>Profile</a></li>
+        <li><a href="#/message"><i class="fa fa-envelope"></i>Message</a></li>
+        <li ng-click="logout()"><a><i class="fa fa-sign-out"></i>Logout</a></li>
+    </ul>
+</nav>
+<div class="container container-black" style="width: 800px">
+    <form class="message_form" style="text-align: center">
+        <label>To</label>
+        <input type="text" ng-model="receiver"/>
+        <label>Subject</label>
+        <input type="text" ng-model="subject"/>
+        <label></label>
+        <textarea style="height: 400px; text-shadow: none" ng-model="content" placeholder="message here..."></textarea>
+        <button class="btn-blue submit_btn horizontal-lined" ng-click="send()">Send</button>
+        <button class="btn-orange submit_btn horizontal-lined" ng-click="send_as_important()">Send As Important</button>
+    </form>
+</div>
