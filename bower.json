@@ -1,0 +1,26 @@
+{
+  "name": "mean-stack-example",
+  "description": "a messaging module buit with MEAN Stack",
+  "main": "start.js",
+  "authors": [
+    "novak"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "mean",
+    "stack"
+  ],
+  "homepage": "https://github.com/imnovaklu",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "bootstrap": "^3.3.7",
+    "angular": "^1.5.5",
+    "angular-route": "^1.6.4"
+  }
+}

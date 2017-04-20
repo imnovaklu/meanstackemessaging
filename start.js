@@ -2,14 +2,16 @@ var mongodb = require('mongodb'),
     mongoClient = mongodb.MongoClient,
     express = require('express'),
     app = express(),
+    secureRoutes = express.Router();
     session = require('express-session'),
     MongoDBStore = require('connect-mongodb-session')(session),
     bodyParser = require('body-parser'),
     fs = require('fs'),
-    conn_str = "mongodb://localhost:27017/ass7";
+    conn_str = "mongodb://localhost:27017/messaging",
+    jwt = require('jsonwebtoken');;
 
 var store = new MongoDBStore({
-    uri:"mongodb://localhost:27017/ass7",
+    uri:"mongodb://localhost:27017/messaging",
     collection:'user_session'
 });
 
@@ -44,18 +46,36 @@ app.use(express.static('assets'));
 app.use(bodyParser.json());
 app.use(
     session({
-        secret:'ass7_sess_secret_key',
+        secret:'messaging_sess_secret_key',
         resave:true,
         saveUninitialized:true,
         store:store
     })
 );
+app.use('/secure-api', secureRoutes);
+
+process.env.SECRET_KEY = "seckeyformessaging";
 
 store.on('error', function (req, res) {
     console.log("error");
 });
 
-app.post('/postuser', function (req, res) {
+secureRoutes.use(function (req, res, next) {
+    var token = req.body.token || req.header['token'];
+    if(token){
+        jwt.verify(token, process.env.SECRET_KEY, function (err, decode) {
+            if(err){
+                res.status(500).send('invalid token');
+            }else{
+                next();
+            }
+        });
+    }else{
+        res.send('please send a token')
+    }
+});
+
+secureRoutes.post('/postuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
@@ -77,12 +97,12 @@ app.post('/postuser', function (req, res) {
     });
 });
 
-app.get('/isloggedin', function (req, res) {
+secureRoutes.get('/isloggedin', function (req, res) {
     var isLoggedIn = req.session.user? true: false;
     res.send(isLoggedIn);
 });
 
-app.post('/login', function (req, res) {
+secureRoutes.post('/login', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
@@ -97,16 +117,16 @@ app.post('/login', function (req, res) {
     req.session.user = req.body;
 });
 
-app.post('/logout', function (req, res) {
+secureRoutes.post('/logout', function (req, res) {
     req.session.user = null;
     res.send(ajaxResult.OK);
 });
 
-app.get('/getloguser', function (req, res) {
+secureRoutes.get('/getloguser', function (req, res) {
     res.send(req.session.user);
 });
 
-app.post('/getuser', function (req, res) {
+secureRoutes.post('/getuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
@@ -126,7 +146,7 @@ app.post('/getuser', function (req, res) {
     });
 });
 
-app.post('/updateuser', function (req, res) {
+secureRoutes.post('/updateuser', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
@@ -144,7 +164,7 @@ app.post('/updateuser', function (req, res) {
     });
 });
 
-app.get('/getlogusermessages', function (req, res) {
+secureRoutes.get('/getlogusermessages', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             console.log("Error happened while connecting to MongoDB");
@@ -162,7 +182,7 @@ app.get('/getlogusermessages', function (req, res) {
     });
 });
 
-app.post('/getmessagebyid', function (req, res) {
+secureRoutes.post('/getmessagebyid', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
@@ -179,7 +199,7 @@ app.post('/getmessagebyid', function (req, res) {
     });
 });
 
-app.post('/postmessage', function (req, res) {
+secureRoutes.post('/postmessage', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
@@ -198,7 +218,7 @@ app.post('/postmessage', function (req, res) {
     });
 });
 
-app.post('/updatemessage', function (req, res) {
+secureRoutes.post('/updatemessage', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
@@ -217,7 +237,7 @@ app.post('/updatemessage', function (req, res) {
     });
 });
 
-app.post('/deletemessage', function (req, res) {
+secureRoutes.post('/deletemessage', function (req, res) {
     mongoClient.connect(conn_str, function(err, db){
         if(err){
             res.send(ajaxResult.CONNECTIONFAIL);
@@ -235,19 +255,19 @@ app.post('/deletemessage', function (req, res) {
 });
 
 
-app.post('/postmessage', function (req, res) {
+secureRoutes.post('/postmessage', function (req, res) {
     res.sendfile(__dirname + '/login.html');
 });
 
-app.get('/', function (req, res) {
+secureRoutes.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-app.use(function (req, res) {
+secureRoutes.use(function (req, res) {
     res.send('404 Not Found!!!!');
 });
 
-app.listen(8080, function () {
+secureRoutes.listen(8080, function () {
     console.log('Server running @ localhost:8080');
 });
 
